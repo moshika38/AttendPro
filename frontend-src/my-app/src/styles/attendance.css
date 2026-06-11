@@ -1,0 +1,135 @@
+.attendance-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.attendance-controls .form-group {
+  margin-bottom: 0;
+  min-width: 180px;
+}
+
+.attendance-grid {
+  width: 100%;
+}
+
+.attendance-grid th:first-child,
+.attendance-grid td:first-child {
+  padding-left: 20px;
+}
+
+.attendance-grid th:last-child,
+.attendance-grid td:last-child {
+  text-align: center;
+}
+
+.student-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.student-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--primary-bg);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.student-name {
+  font-weight: 500;
+  color: var(--gray-900);
+}
+
+.student-email {
+  font-size: 12px;
+  color: var(--gray-400);
+}
+
+.attendance-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.attn-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-200);
+  background: var(--white);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  color: var(--gray-500);
+}
+
+.attn-btn:hover {
+  border-color: var(--gray-300);
+  background: var(--gray-50);
+}
+
+.attn-btn.active-present {
+  background: var(--success-bg);
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.attn-btn.active-absent {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.attn-btn.active-late {
+  background: var(--warning-bg);
+  border-color: var(--warning);
+  color: var(--warning);
+}
+
+.attendance-summary {
+  display: flex;
+  gap: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--gray-200);
+  margin-top: 16px;
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--gray-600);
+}
+
+.summary-item .count {
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.summary-item .count.green { color: var(--success); }
+.summary-item .count.red { color: var(--danger); }
+.summary-item .count.yellow { color: var(--warning); }
+
+@media (max-width: 768px) {
+  .attendance-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .attendance-controls .form-group {
+    min-width: unset;
+  }
+}
