@@ -1,7 +1,7 @@
 import { useLocation } from 'react-router-dom'
 
 const pageTitles = {
-  '/': 'Dashboard',
+  '/dashboard': 'Dashboard',
   '/students': 'Students',
   '/attendance': 'Attendance',
   '/reports': 'Reports',
