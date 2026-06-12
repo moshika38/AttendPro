@@ -93,7 +93,7 @@ def add_student():
 def update_student(id):
     data = request.get_json()
     
-     # check all required fields are present
+      
     if not data.get("name") or not data.get("email") or not data.get("class"):
         return jsonify({"error": "Missing required fields"}), 400
    
