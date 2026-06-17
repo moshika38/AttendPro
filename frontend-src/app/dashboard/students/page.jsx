@@ -1,25 +1,52 @@
 "use client";
-import React, { useState } from 'react'
-
-const initialStudentList = [
-  { name: 'Amina Patel', grade: '8B', status: 'Present' },
-  { name: 'James Carter', grade: '9A', status: 'Absent' },
-  { name: 'Lily Nguyen', grade: '10C', status: 'Late' },
-  { name: 'Noah Smith', grade: '8A', status: 'Present' },
-]
+import React, { useState, useEffect } from 'react'
 
 function Students() {
-  const [students, setStudents] = useState(initialStudentList)
+  const [students, setStudents] = useState([])
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [editingIndex, setEditingIndex] = useState(-1)
-  const [modalStudent, setModalStudent] = useState({ name: '', grade: '', status: 'Present' })
+  const [modalStudent, setModalStudent] = useState({ name: '', email: '', studentClass: 'Class A' })
+
+
+  useEffect(() => {
+    async function getStudents() {
+      try {
+        const response = await fetch("http://127.0.0.1:5000/api/students", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          setStudents(data.map((student) => ({
+            ...student,
+            studentClass: student.studentClass || student.class || student.status || 'Class A',
+          })));
+        } else {
+          alert("Error: " + (data.response || data.error || "Unable to load students"));
+        }
+      } catch (error) {
+        console.error("Failed to fetch students:", error);
+        alert("Network error loading students.");
+      }
+    }
+    getStudents();
+  }, [])
 
   function openEditor(index = -1) {
     if (index >= 0) {
-      setModalStudent(students[index])
+      const existing = students[index]
+      setModalStudent({
+        id: existing.id || existing._id || null,
+        name: existing.name || '',
+        email: existing.email || existing.grade || '',
+        studentClass: existing.studentClass || existing.class || existing.status || 'Class A',
+      })
       setEditingIndex(index)
     } else {
-      setModalStudent({ name: '', grade: '', status: 'Present' })
+      setModalStudent({ name: '', email: '', studentClass: 'Class A' })
       setEditingIndex(-1)
     }
     setIsEditorOpen(true)
@@ -30,19 +57,87 @@ function Students() {
     setEditingIndex(-1)
   }
 
-  function handleSaveStudent(event) {
+  async function handleSaveStudent(event) {
     event.preventDefault()
-    if (!modalStudent.name.trim() || !modalStudent.grade.trim()) {
+    if (!modalStudent.name.trim() || !modalStudent.email.trim()) {
       return
     }
 
     if (editingIndex >= 0) {
-      setStudents((prev) => prev.map((student, i) => (i === editingIndex ? { ...modalStudent } : student)))
-    } else {
-      setStudents((prev) => [...prev, { ...modalStudent }])
-    }
+      const studentId = students[editingIndex].id || students[editingIndex]._id;
 
-    closeEditor()
+      try {
+        const response = await fetch(`http://127.0.0.1:5000/api/students/${studentId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: modalStudent.name,
+            email: modalStudent.email,
+            class: modalStudent.studentClass
+          }),
+        });
+
+        if (response.ok) {
+          setStudents((prev) => prev.map((student, i) =>
+            i === editingIndex
+              ? { ...student, ...modalStudent, class: modalStudent.studentClass, studentClass: modalStudent.studentClass }
+              : student
+          ))
+          closeEditor()
+          alert("Updated successfully");
+        } else {
+          alert("Failed to update student in database");
+        }
+      } catch (e) {
+        console.error("Failed to update student:", e);
+        alert("Network error updating student");
+      }
+
+    } else {
+      try {
+        const response = await fetch("http://127.0.0.1:5000/api/students", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: modalStudent.name,
+            email: modalStudent.email,
+            class: modalStudent.studentClass
+          }),
+        });
+
+        await response.json();
+
+        if (response.ok) {
+          setStudents((prev) => [...prev, { ...modalStudent, studentClass: modalStudent.studentClass }])
+          closeEditor()
+        } else {
+          alert("Failed to add students");
+        }
+      } catch (e) {
+        console.error("Failed to add students:", e);
+        alert("Failed to add students");
+      }
+    }
+  }
+
+
+  async function handleDelete(id) {
+    const response = await fetch(`http://127.0.0.1:5000/api/students/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    if (response.ok) {
+      setStudents((prev) => prev.filter((student) => (student.id || student._id) !== id));
+      alert("Student deleted!");
+    } else {
+      alert("Failed to delete student");
+    }
   }
 
   const studentCount = students.length
@@ -83,24 +178,24 @@ function Students() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700">Grade</label>
+                <label className="block text-sm font-medium text-slate-700">Email</label>
                 <input
-                  value={modalStudent.grade}
-                  onChange={(event) => setModalStudent((prev) => ({ ...prev, grade: event.target.value }))}
+                  value={modalStudent.email}
+                  onChange={(event) => setModalStudent((prev) => ({ ...prev, email: event.target.value }))}
                   className="mt-2 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-950"
-                  placeholder="e.g. 9A"
+                  placeholder="student@school.edu"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700">Status</label>
+                <label className="block text-sm font-medium text-slate-700">Class</label>
                 <select
-                  value={modalStudent.status}
-                  onChange={(event) => setModalStudent((prev) => ({ ...prev, status: event.target.value }))}
+                  value={modalStudent.studentClass}
+                  onChange={(event) => setModalStudent((prev) => ({ ...prev, studentClass: event.target.value }))}
                   className="mt-2 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-950"
                 >
-                  <option>Present</option>
-                  <option>Absent</option>
-                  <option>Late</option>
+                  <option>Class A</option>
+                  <option>Class B</option>
+                  <option>Class C</option>
                 </select>
               </div>
 
@@ -159,8 +254,8 @@ function Students() {
             <div className="mt-6 overflow-hidden rounded-3xl border border-slate-200">
               <div className="grid grid-cols-[1.5fr_1fr_1fr_0.8fr] bg-slate-100 px-5 py-4 text-sm font-semibold text-slate-500">
                 <span>Name</span>
-                <span>Grade</span>
-                <span>Status</span>
+                <span>Email</span>
+                <span>Class</span>
                 <span className="text-right">Action</span>
               </div>
               {students.map((student, index) => (
@@ -168,17 +263,29 @@ function Students() {
                   <div>
                     <p className="font-medium text-slate-950">{student.name}</p>
                   </div>
-                  <p className="text-slate-700">{student.grade}</p>
-                  <span className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-sm font-semibold ${student.status === 'Present' ? 'bg-emerald-100 text-emerald-700' : student.status === 'Absent' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>
-                    {student.status}
+                  <p className="text-slate-700">{student.email || student.grade}</p>
+                  <span className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-sm font-semibold ${student.studentClass === 'Class A' || student.class === 'Class A' || student.status === 'Section A' ? 'bg-emerald-100 text-emerald-700' : student.studentClass === 'Class B' || student.class === 'Class B' || student.status === 'Section B' ? 'bg-sky-100 text-sky-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {student.studentClass || student.class || student.status}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => openEditor(index)}
-                    className="justify-self-end rounded-3xl bg-slate-950 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:bg-slate-800"
-                  >
-                    Edit
-                  </button>
+                  <div className="justify-self-end inline-flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openEditor(index)}
+                      className="rounded-3xl bg-slate-950 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:bg-slate-800"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm("Are you sure?")) { handleDelete(student.id); }
+                      }}
+                      className="rounded-3xl border border-rose-500 bg-white px-4 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
+                    >
+                      Delete
+                    </button>
+                  </div>
+
                 </div>
               ))}
             </div>
@@ -189,4 +296,4 @@ function Students() {
   )
 }
 
-export default Students
+export default Students;
