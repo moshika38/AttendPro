@@ -1,1 +1,3 @@
-  freeze 
+flask
+flask-cors
+gunicorn
