@@ -1,13 +1,42 @@
 'use client'
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { saveMyCookie } from "@/app/actions"
 
 export default function Home() {
+
   const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [formErr, setFormErr] = useState("");
 
   async function handleLogin(e) {
+     
     e.preventDefault();
 
-    router.push("/dashboard");
+    if (email === "" && password === "") {
+      setFormErr("* Please fill out all fields");
+      return;
+    } else {
+      setFormErr("");
+    }
+
+    const response = await fetch("http://127.0.0.1:5000/api/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      setFormErr("");
+      await saveMyCookie(email);
+      router.push("/dashboard");
+    } else {
+      setFormErr("*" + data.response || "Login failed");
+    }
   }
 
   return (
@@ -42,6 +71,8 @@ export default function Home() {
               placeholder="student@school.edu"
               className="mt-2 w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
               required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
 
@@ -60,6 +91,8 @@ export default function Home() {
               placeholder="Enter your password"
               className="mt-2 w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
               required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
           </div>
 
@@ -70,6 +103,7 @@ export default function Home() {
           >
             Sign In
           </button>
+          <p className="text-red-600 text-[10px]">{formErr}</p>
         </form>
 
         <div className="mt-8 rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">

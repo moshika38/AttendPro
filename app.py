@@ -41,17 +41,17 @@ def login():
     password = data.get("password")
     
     if not email or not password:
-        return jsonify({"error": "Missing email or password"}), 400
+        return jsonify({"response": "Missing email or password"}), 400
    
     db = get_db()
     admin = db.execute("SELECT * FROM admin WHERE email = ?", (email,)).fetchone()
     db.close()
     if not admin:
-            return jsonify({"error": "Invalid email"}), 401
+            return jsonify({"response": "Invalid email"}), 401
     if admin and admin["password"] == password:
-          return jsonify({"message": "Login successful"})
+          return jsonify({"response": "Login successful"})
     else:
-          return jsonify({"error": "Invalid password"}), 401
+          return jsonify({"response": "Invalid password"}), 401
      
   
 

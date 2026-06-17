@@ -1,36 +1,147 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Flask + React Student Management System
 
-## Getting Started
+A simple Student Management System built with **Flask**, **React (Vite)**, and **SQLite**.
 
-First, run the development server:
+## Project Structure
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```text
+my-project/
+│
+├── venv/                    # Python virtual environment
+│
+├── static/                  # React production build output
+│   ├── index.html
+│   └── assets/
+│       ├── index-abc123.js
+│       └── index-abc123.css
+│
+├── frontend-src/            # React source code
+│   ├── src/
+│   │   ├── App.jsx
+│   │   ├── main.jsx
+│   │   └── components/
+│   ├── public/
+│   ├── package.json
+│   └── vite.config.js
+│
+├── app.py                   # Flask application
+├── database.py              # SQLite database connection
+├── requirements.txt         # Python dependencies
+└── students.db              # SQLite database
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Technologies Used
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+* Python
+* Flask
+* React
+* Vite
+* SQLite
+* JavaScript
+* HTML
+* CSS
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Setup Instructions
 
-## Learn More
+### 1. Create Virtual Environment
 
-To learn more about Next.js, take a look at the following resources:
+```
+python -m venv venv
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 2. Activate Virtual Environment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Windows:
 
-## Deploy on Vercel
+```
+venv\Scripts\activate
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 3. Install Flask
+
+```
+pip install flask
+```
+
+### 4. Generate Requirements File
+
+```
+pip freeze > requirements.txt
+```
+
+### 5. Create Project Directories
+
+```
+mkdir static
+mkdir frontend-src
+```
+
+### 6. Create Backend Files
+
+```
+echo. > app.py
+echo. > database.py
+```
+
+### 7. Setup React Frontend
+
+```
+cd frontend-src
+npm install
+```
+
+## Vite Configuration
+
+File: `frontend-src/vite.config.js`
+
+```javascript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  build: {
+    outDir: '../static',
+    emptyOutDir: true
+  }
+})
+```
+
+## Build React Application
+
+Navigate to the frontend directory:
+
+```
+cd frontend-src
+```
+
+Build the React application:
+
+```
+npm run build
+```
+
+The generated files will be placed inside the `static/` directory.
+
+## Run Flask Application
+
+```
+python app.py
+```
+
+Flask will serve both the backend API and the React frontend.
+
+## Features
+
+* Add Students
+* View Students
+* Update Student Information
+* Delete Students
+* SQLite Database Integration
+* React Frontend
+* Flask REST API
+
+## License
+
+This project is open-source and available under the MIT License.
