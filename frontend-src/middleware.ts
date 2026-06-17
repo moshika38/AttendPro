@@ -7,6 +7,7 @@ export function middleware(request: NextRequest) {
 
     // this is public route, can access without login. it's mean, can login or access without cookies details (ex : token, email)
     // const publicRoutes = ['/','/login','/register']
+     
     
     const publicRoutes = ['/',]
     const isPublicRoute = publicRoutes.includes(pathname)

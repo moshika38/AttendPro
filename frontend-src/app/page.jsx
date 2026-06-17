@@ -11,7 +11,7 @@ export default function Home() {
   const [formErr, setFormErr] = useState("");
 
   async function handleLogin(e) {
-     
+
     e.preventDefault();
 
     if (email === "" && password === "") {
