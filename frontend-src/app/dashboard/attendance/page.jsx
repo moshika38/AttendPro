@@ -1,48 +1,160 @@
 "use client"
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
-const classOptions = ['All', '8A', '8B', '9A', '10C']
-const initialStudents = [
-  { name: 'Amina Patel', grade: '8', section: 'B', status: 'Present', classKey: '8B' },
-  { name: 'James Carter', grade: '8', section: 'B', status: 'Absent', classKey: '8B' },
-  { name: 'Lily Nguyen', grade: '10', section: 'C', status: 'Late', classKey: '10C' },
-  { name: 'Noah Smith', grade: '8', section: 'B', status: 'Present', classKey: '8B' },
-  { name: 'Mia Johnson', grade: '9', section: 'A', status: 'Present', classKey: '9A' },
-]
+const classOptions = ['All', 'Class A', 'Class B', 'Class C']
+
 
 function Attendance() {
-  const [students, setStudents] = useState(initialStudents)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedClass, setSelectedClass] = useState('All')
-  const [statusFilter, setStatusFilter] = useState('All')
+  const [students, setStudents] = useState([])
+  const [selectedClass, setSelectedClass] = useState("All")
+  const [attendance, setAttendance] = useState([])
 
-  const filteredStudents = useMemo(() => {
-    return students.filter((student) => {
-      const matchesClass = selectedClass === 'All' || student.classKey === selectedClass
-      const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase())
-      const matchesStatus = statusFilter === 'All' || student.status === statusFilter
-      return matchesClass && matchesSearch && matchesStatus
+  const [totPresent, setTotPresent] = useState(0)
+  const [totAbsent, setTotAbsent] = useState(0)
+  const [totLate, setTotLate] = useState(0)
+
+  const today = new Date().toISOString().slice(0, 10)
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || ""
+  const statusStyle = {
+    Present: "bg-slate-950 text-slate-100",
+    Absent: "bg-rose-400 text-slate-950",
+    Late: "bg-amber-400 text-slate-950"
+  }
+
+  useEffect(() => {
+    const updateTotals = () => {
+      setTotPresent(attendance.filter(item => item.status === "Present").length)
+      setTotAbsent(attendance.filter(item => item.status === "Absent").length)
+      setTotLate(attendance.filter(item => item.status === "Late").length)
+    }
+    updateTotals()
+  }, [attendance])
+
+  useEffect(() => {
+    async function getStudents() {
+      try {
+        const response = await fetch(`${apiUrl}/api/students`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+
+        const data = await response.json()
+        if (response.ok) {
+          setStudents(data)
+        } else {
+          alert("Error: " + (data.response || data.error || "Unable to load students"))
+        }
+      } catch (error) {
+        console.error("Failed to fetch students:", error)
+        alert("Network error loading students.")
+      }
+    }
+
+    async function getAttendance() {
+      try {
+        const response = await fetch(`${apiUrl}/api/attendance?date=${encodeURIComponent(today)}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+
+        const data = await response.json()
+        if (response.ok) {
+          setAttendance(data)
+        } else {
+          alert("Error: " + (data.response || data.error || "Unable to load attendance"))
+        }
+      } catch (error) {
+        console.error("Failed to fetch attendance:", error)
+        alert("Network error loading attendance.")
+      }
+    }
+
+    getStudents()
+    getAttendance()
+  }, [apiUrl, today])
+
+
+  async function saveAttendance(record) {
+    try {
+      const url = record.id
+        ? `${apiUrl}/api/attendance/${record.id}`
+        : `${apiUrl}/api/attendance`
+      const method = record.id ? "PUT" : "POST"
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(record),
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to save attendance")
+      }
+      return data
+    } catch (error) {
+      console.error("Failed to save attendance:", error)
+      return null
+    }
+  }
+
+  async function updateStatus(id, status) {
+    const existing = attendance.find(a => a.student_id === id)
+    const record = existing
+      ? { ...existing, status }
+      : { student_id: id, date: today, status }
+
+    setAttendance(prev => {
+      const exists = prev.some(a => a.student_id === id)
+      return exists
+        ? prev.map(a => (a.student_id === id ? record : a))
+        : [...prev, record]
     })
-  }, [students, searchQuery, selectedClass, statusFilter])
 
-  const counts = useMemo(() => {
-    return students.reduce(
-      (acc, student) => {
-        acc[student.status] = (acc[student.status] || 0) + 1
-        return acc
-      },
-      { Present: 0, Absent: 0, Late: 0 }
+    const saved = await saveAttendance(record)
+    if (saved?.id) {
+      setAttendance(prev =>
+        prev.map(a =>
+          a.student_id === saved["student_id"] ? { ...a, id: saved.id } : a
+        )
+      )
+    }
+  }
+
+  async function markAll(status) {
+    const filteredStudents =
+      selectedClass === "All"
+        ? students
+        : students.filter(student => student.class === selectedClass)
+
+    const records = filteredStudents.map(student => ({
+      student_id: student.id,
+      date: today,
+      status,
+    }))
+
+    setAttendance(records)
+
+    await Promise.all(
+      records.map(async (record) => {
+        const saved = await saveAttendance(record)
+        if (saved?.id) {
+          setAttendance((prev) =>
+            prev.map((a) =>
+              a.student_id === saved["student_id"]
+                ? { ...a, id: saved.id }
+                : a
+            )
+          )
+        }
+      })
     )
-  }, [students])
-
-  function markAllPresent() {
-    setStudents((prev) => prev.map((student) => ({ ...student, status: 'Present' })))
   }
-
-  function changeStudentStatus(index, status) {
-    setStudents((prev) => prev.map((student, idx) => (idx === index ? { ...student, status } : student)))
-  }
-
   return (
     <div className="space-y-8">
       <header className="flex flex-col gap-3">
@@ -70,15 +182,15 @@ function Attendance() {
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
             <div className="rounded-3xl bg-slate-50 p-4">
               <p className="text-sm text-slate-500">Present</p>
-              <p className="mt-3 text-3xl font-semibold text-slate-950">{counts.Present}</p>
+              <p className="mt-3 text-3xl font-semibold text-slate-950">{totPresent}</p>
             </div>
             <div className="rounded-3xl bg-slate-50 p-4">
               <p className="text-sm text-slate-500">Absent</p>
-              <p className="mt-3 text-3xl font-semibold text-slate-950">{counts.Absent}</p>
+              <p className="mt-3 text-3xl font-semibold text-slate-950">{totAbsent}</p>
             </div>
             <div className="rounded-3xl bg-slate-50 p-4">
               <p className="text-sm text-slate-500">Late</p>
-              <p className="mt-3 text-3xl font-semibold text-slate-950">{counts.Late}</p>
+              <p className="mt-3 text-3xl font-semibold text-slate-950">{totLate}</p>
             </div>
           </div>
 
@@ -87,22 +199,22 @@ function Attendance() {
               <p className="text-sm text-slate-500">Quick action</p>
               <div className="flex flex-wrap gap-3">
                 <button
+                  onClick={() => markAll("Present")}
                   type="button"
-                  onClick={markAllPresent}
                   className="rounded-3xl bg-slate-950 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:bg-slate-800"
                 >
                   Mark all present
                 </button>
                 <button
+                  onClick={() => markAll("Late")}
                   type="button"
-                  onClick={() => setStudents((prev) => prev.map((student) => ({ ...student, status: 'Late' })))}
                   className="rounded-3xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-300"
                 >
                   Mark all late
                 </button>
                 <button
+                  onClick={() => markAll("Absent")}
                   type="button"
-                  onClick={() => setStudents((prev) => prev.map((student) => ({ ...student, status: 'Absent' })))}
                   className="rounded-3xl bg-rose-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-rose-300"
                 >
                   Mark all absent
@@ -122,32 +234,28 @@ function Attendance() {
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <label className="sr-only" htmlFor="class-select">
-                Class
-              </label>
+              <label className="sr-only" htmlFor="class-select">Class</label>
               <select
                 id="class-select"
-                value={selectedClass}
-                onChange={(event) => setSelectedClass(event.target.value)}
+                onChange={(e) => setSelectedClass(e.target.value)}
                 className="rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-950"
               >
+
+
                 {classOptions.map((option) => (
-                  <option key={option} value={option}>
+                  <option key={option} value={option} >
                     {option}
                   </option>
                 ))}
+
               </select>
               <span className="text-sm text-slate-500">Class</span>
             </div>
 
             <div className="w-full sm:w-80">
-              <label className="sr-only" htmlFor="student-search">
-                Search students
-              </label>
+              <label className="sr-only" htmlFor="student-search">Search students</label>
               <input
                 id="student-search"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search student"
                 className="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-950"
               />
@@ -155,70 +263,57 @@ function Attendance() {
           </div>
 
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-slate-500">Filter by status</p>
-            <div className="flex flex-wrap items-center gap-2">
-              {['All', 'Present', 'Absent', 'Late'].map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setStatusFilter(option)}
-                  className={`rounded-3xl px-4 py-2 text-sm font-semibold transition ${
-                    statusFilter === option
-                      ? 'bg-slate-950 text-slate-100'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
+            <p className="text-[12px] ml-2 ">Students list</p>
           </div>
 
           <div className="mt-6 space-y-3">
-            {filteredStudents.length === 0 ? (
+
+
+
+            {students.length === 0 ? (
               <div className="rounded-3xl bg-slate-50 p-6 text-center text-sm text-slate-500">
                 No matching students found.
               </div>
             ) : (
-              filteredStudents.map((student, index) => (
-                <div
-                  key={`${student.name}-${index}`}
-                  className="rounded-3xl bg-slate-50 px-4 py-4 shadow-sm"
-                >
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="font-medium text-slate-950">{student.name}</p>
-                      <p className="text-sm text-slate-500">Grade {student.grade} · Section {student.section}</p>
-                    </div>
+              students.filter(student => selectedClass === "All" || student.class === selectedClass).map((student) => {
+                const current = attendance.find(a => a.student_id === student.id)
+                const currentStatus = current ? current.status : ""
+
+                return (
+                  <div key={student.id} className="flex flex-row items-center justify-between rounded-3xl bg-slate-50 px-4 py-4">
+                    <p className="w-8 text-sm font-medium text-slate-500">{student.id}</p>
+                    <p className="flex-1 px-4 font-medium text-slate-950">{student.name}</p>
                     <div className="flex items-center gap-2">
-                      <span className={`rounded-full px-3 py-1 text-sm font-semibold ${student.status === 'Present' ? 'bg-emerald-100 text-emerald-700' : student.status === 'Absent' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>
-                        {student.status}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        {['Present', 'Absent', 'Late'].map((status) => (
-                          <button
-                            key={status}
-                            type="button"
-                            onClick={() => changeStudentStatus(students.indexOf(student), status)}
-                            className={`rounded-3xl px-3 py-2 text-xs font-semibold transition ${
-                              student.status === status
-                                ? 'bg-slate-950 text-slate-100'
-                                : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
-                            }`}
-                          >
-                            {status}
-                          </button>
-                        ))}
-                      </div>
+                      <button
+                        onClick={() => updateStatus(student.id, "Present")}
+                        className={`rounded-3xl px-3 py-2 text-xs font-semibold transition border border-slate-200 ${currentStatus === "Present" ? statusStyle.Present : "bg-white text-slate-700 hover:bg-slate-100"}`}
+                      >
+                        Present
+                      </button>
+                      <button
+                        onClick={() => updateStatus(student.id, "Absent")}
+                        className={`rounded-3xl px-3 py-2 text-xs font-semibold transition border border-slate-200 ${currentStatus === "Absent" ? statusStyle.Absent : "bg-white text-slate-700 hover:bg-slate-100"}`}
+                      >
+                        Absent
+                      </button>
+                      <button
+                        onClick={() => updateStatus(student.id, "Late")}
+                        className={`rounded-3xl px-3 py-2 text-xs font-semibold transition border border-slate-200 ${currentStatus === "Late" ? statusStyle.Late : "bg-white text-slate-700 hover:bg-slate-100"}`}
+                      >
+                        Late
+                      </button>
                     </div>
                   </div>
-                </div>
-              ))
+                )
+              })
             )}
+
           </div>
+
+
         </article>
       </section>
-    </div>
+    </div >
   )
 }
 

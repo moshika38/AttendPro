@@ -1,8 +1,8 @@
-import os
-try:
-    from dotenv import load_dotenv
-except ImportError:
-    load_dotenv = lambda *args, **kwargs: None
+from pathlib import Path
+path = Path('app.py')
+text = path.read_text(encoding='utf-8')
+new_text = '''import os
+from dotenv import load_dotenv
 from flask import Flask, send_from_directory, jsonify, request
 from flask_cors import CORS
 from database import get_db, init_db
@@ -161,3 +161,6 @@ def update_attendance(id):
 
 if __name__ == '__main__':
     app.run(debug=True)
+'''
+path.write_text(new_text, encoding='utf-8')
+print('app.py rewritten')

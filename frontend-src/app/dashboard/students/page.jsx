@@ -67,7 +67,7 @@ function Students() {
       const studentId = students[editingIndex].id || students[editingIndex]._id;
 
       try {
-        const response = await fetch(fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/students/${studentId}`), {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/students/${studentId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -97,7 +97,7 @@ function Students() {
 
     } else {
       try {
-        const response = await fetch(fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/students`), {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/students`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
