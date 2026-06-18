@@ -11,7 +11,7 @@ function Students() {
   useEffect(() => {
     async function getStudents() {
       try {
-        const response = await fetch("http://127.0.0.1:5000/api/students", {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/students`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -67,7 +67,7 @@ function Students() {
       const studentId = students[editingIndex].id || students[editingIndex]._id;
 
       try {
-        const response = await fetch(`http://127.0.0.1:5000/api/students/${studentId}`, {
+        const response = await fetch(fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/students/${studentId}`), {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -97,7 +97,7 @@ function Students() {
 
     } else {
       try {
-        const response = await fetch("http://127.0.0.1:5000/api/students", {
+        const response = await fetch(fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/students`), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -126,7 +126,7 @@ function Students() {
 
 
   async function handleDelete(id) {
-    const response = await fetch(`http://127.0.0.1:5000/api/students/${id}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/students/${id}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",

@@ -1,41 +1,41 @@
-import sqlite3
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
-DATABASE = 'database.db'
+# DATABASE_URL = os.getenv('DATABASE_URL')
 
 def get_db():
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
+    DATABASE_URL = os.getenv('DATABASE_URL')   
+    conn = psycopg2.connect(DATABASE_URL)
+    conn.cursor_factory = RealDictCursor
     return conn
 
 def init_db():
     conn = get_db()
-
-    conn.execute("""
+    cursor = conn.cursor()
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS admin (
-            id        INTEGER PRIMARY KEY AUTOINCREMENT,
-            email      TEXT NOT NULL,
-            password     TEXT
-             )
+            id       SERIAL PRIMARY KEY,
+            email    TEXT NOT NULL,
+            password TEXT
+        )
     """)
-    
-    conn.execute("""
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS students (
-            id        INTEGER PRIMARY KEY AUTOINCREMENT,
-            name      TEXT NOT NULL,
-            email     TEXT,
-            class     TEXT
+            id    SERIAL PRIMARY KEY,
+            name  TEXT NOT NULL,
+            email TEXT,
+            class TEXT
         )
     """)
-
-    conn.execute("""
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS attendance (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            student_id  INTEGER NOT NULL,
-            date        TEXT NOT NULL,
-            status      TEXT NOT NULL DEFAULT 'present',
-            FOREIGN KEY (student_id) REFERENCES students(id)
+            id         SERIAL PRIMARY KEY,
+            student_id INTEGER NOT NULL REFERENCES students(id),
+            date       TEXT NOT NULL,
+            status     TEXT NOT NULL DEFAULT 'present'
         )
     """)
-
     conn.commit()
+    cursor.close()
     conn.close()
